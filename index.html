@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Blog Post</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-around;
+      padding: 20px;
+    }
+
+    .create-post, .blog-posts {
+      width: 45%;
+      padding: 20px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+
+    #createComment {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="create-post">
+      <h2>Create Blog Post</h2>
+      <form id="blogForm">
+        <label for="title">Title:</label>
+        <input type="text" id="title" required>
+        
+        <label for="author">Author:</label>
+        <input type="text" id="author" required>
+        
+        <label for="content">Content:</label>
+        <textarea id="content" required></textarea>
+        
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+    <div class="blog-posts">
+      <h2>Blog Posts</h2>
+      <div id="posts"></div>
+    </div>
+  </div>
+  <script>
+    const blogForm = document.getElementById("blogForm");
+    const postsContainer = document.getElementById("posts");
+
+    blogForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const author = document.getElementById("author").value;
+      const content = document.getElementById("content").value;
+
+      const newPost = {
+        title,
+        author,
+        content,
+        comments: []
+      };
+
+      let posts = JSON.parse(localStorage.getItem("posts")) || [];
+      posts.push(newPost);
+      localStorage.setItem("posts", JSON.stringify(posts));
+
+      updatePosts();
+      blogForm.reset();
+    });
+
+    function updatePosts() {
+      postsContainer.innerHTML = "";
+
+      const posts = JSON.parse(localStorage.getItem("posts")) || [];
+      posts.forEach((post, index) => {
+        const postElement = document.createElement("div");
+        postElement.classList.add("post");
+        postElement.innerHTML = `
+          <h3><a href="#" onclick="showPostContent(${index})">${post.title}</a></h3>
+          <p>Author: ${post.author}</p>
+          <p>${post.content}</p>
+        `;
+        postsContainer.appendChild(postElement);
+      });
+    }
+
+    function showPostContent(index) {
+      const post = JSON.parse(localStorage.getItem("posts"))[index];
+      const postContent = `
+        <h3>${post.title}</h3>
+        <p>Author: ${post.author}</p>
+        <p>${post.content}</p>
+        <button onclick="showComments(${index})">Show Comments</button>
+        <div id="comments-${index}"></div>
+      `;
+
+      postsContainer.innerHTML = postContent;
+    }
+
+    function showComments(index) {
+      const commentsContainer = document.getElementById(`comments-${index}`);
+      const commentForm = `
+        <form id="createComment">
+          <input type="text" id="commentText" placeholder="Enter your comment" required>
+          <button type="submit">Add Comment</button>
+        </form>
+      `;
+
+      commentsContainer.innerHTML = commentForm;
+
+      const commentFormElement = document.getElementById("createComment");
+      commentFormElement.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const commentText = document.getElementById("commentText").value;
+        const posts = JSON.parse(localStorage.getItem("posts")) || [];
+
+        posts[index].comments.push(commentText);
+        localStorage.setItem("posts", JSON.stringify(posts));
+
+        showComments(index);
+      });
+
+      const comments = JSON.parse(localStorage.getItem("posts"))[index].comments || [];
+      const commentsList = comments.map(comment => `<p>${comment} <button onclick="deleteComment(${index}, '${comment}')">Delete</button></p>`).join("");
+
+      commentsContainer.insertAdjacentHTML("beforeend", commentsList);
+    }
+
+    function deleteComment(postIndex, commentText) {
+      const posts = JSON.parse(localStorage.getItem("posts")) || [];
+      const comments = posts[postIndex].comments;
+      const commentIndex = comments.indexOf(commentText);
+
+      if (commentIndex !== -1) {
+        comments.splice(commentIndex, 1);
+        localStorage.setItem("posts", JSON.stringify(posts));
+        showComments(postIndex);
+      }
+    }
+
+    updatePosts();
+  </script>
+</body>
+</html>
